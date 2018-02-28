@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+
+    <div class="timer-container">
+        <div class="session-started">Session started</div>
+        <div class="break-started">Break started</div>
+        <div id="timerContainer"></div>
+    </div>
+    <div class="session-duration">
+        <input type="number" value="15000" id="string">
+        <label for="string">session duration</label>
+    </div>
+
+    <div class="break-duration">
+        <input type="number" value="15000" id="break">
+        <label for="string">break duration</label>
+    </div>
+
+
+    <div>
+        <button onclick="startTimer()">Start timer</button>
+        <button onclick="closeConnection()">Close connection</button>
+        <button onclick="openConnection()">Open connection</button>
+    </div>
+</body>
+
+<script>
+
+    let socket;
+    let isBreak = false;
+    const input = document.getElementById('string');
+    const timerContainer = document.getElementById('timerContainer');
+    const sessionMessage = document.querySelector('.session-started');
+    const breackMessage = document.querySelector('.break-started');
+
+    function openConnection() {
+        socket = new WebSocket('ws://localhost:8001');
+        socket.addEventListener('open', function (event) {
+            // socket.send('Hello Server!');
+        });
+
+        socket.addEventListener('message', function (event) {
+            console.log('Message from server ', event.data);
+            if (event.data === 'end') console.log('end on backend')
+        });
+    }
+
+    function changeMessageStatus() {
+        if(isBreak) {
+            sessionMessage.classList.remove('show');
+            breackMessage.classList.add('show');
+        } else {
+            sessionMessage.classList.add('show');
+            breackMessage.classList.remove('show');
+        }
+    }
+
+    function closeConnection() {
+        socket.close();
+    }
+
+    function startTimer() {
+        if (input.value) {
+            setTimer(Number(input.value));
+            socket.send(input.value);
+        }
+    }
+
+    function setTimer(time) {
+        const timer = setInterval(() => {
+            if (time <= 0) {
+                console.log('end on client');
+                isBreak = !isBreak;
+                clearInterval(timer);
+                changeMessageStatus();
+            } else {
+                time = time - 1000;
+                timerContainer.innerHTML = millisToMinutesAndSeconds(time);
+            }
+        }, 1000);
+    }
+
+    function millisToMinutesAndSeconds(millis) {
+        var minutes = Math.floor(millis / 60000);
+        var seconds = ((millis % 60000) / 1000).toFixed(0);
+        return minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
+    }
+</script>
+
+</html>
